@@ -1,22 +1,36 @@
-import os
-import telebot
-import requests
+import os, requests, telebot, threading
+from flask import Flask
 
-HF_API_KEY = os.getenv("HF_API_KEY")
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+HF_TOKEN = os.getenv("HF_TOKEN")
+HF_MODEL = "EleutherAI/gpt-j-6B"
+
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 
-MODEL = "gpt2"  # অথবা "TheBloke/WizardLM-7B-1.0-HF" (CPU-friendly)
+def query_hf(prompt):
+    headers = {"Authorization": f"Bearer {HF_TOKEN}"}
+    json_data = {"inputs": prompt, "options":{"use_cache":False}}
+    r = requests.post(f"https://api-inference.huggingface.co/models/{HF_MODEL}", headers=headers, json=json_data)
+    try:
+        return r.json()[0]['generated_text']
+    except:
+        return "Sorry, couldn't generate response."
 
-def ask_hf(prompt):
-    headers = {"Authorization": f"Bearer {HF_API_KEY}"}
-    payload = {"inputs": prompt}
-    r = requests.post(f"https://api-inference.huggingface.co/models/{MODEL}", headers=headers, json=payload)
-    return r.json()[0]["generated_text"]
+@bot.message_handler(func=lambda m: True)
+def chat_with_hf(msg):
+    reply = query_hf(msg.text)
+    bot.reply_to(msg, reply)
 
-@bot.message_handler(func=lambda message: True)
-def reply(message):
-    response = ask_hf(message.text)
-    bot.reply_to(message, response)
+# Flask server for Render
+app = Flask(__name__)
+@app.route("/")
+def home():
+    return "Bot is running ✅"
 
-bot.polling()
+def run_bot():
+    bot.infinity_polling()
+
+if __name__ == "__main__":
+    threading.Thread(target=run_bot).start()
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
