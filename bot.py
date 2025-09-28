@@ -33,10 +33,3 @@ if __name__ == "__main__":
     threading.Thread(target=run_bot).start()
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-r = requests.post(
-    f"https://api-inference.huggingface.co/models/{HF_MODEL}", 
-    headers=headers, 
-    json=json_data,
-    timeout=30
-)
-print(r.text)  # এটা print করলে কি আসছে দেখবেন
