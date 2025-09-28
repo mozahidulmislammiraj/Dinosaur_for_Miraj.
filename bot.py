@@ -1,20 +1,26 @@
-import os, requests, telebot, threading
+# bot.py
+import os
+import telebot
+import requests
+import threading
 from flask import Flask
 
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-HF_TOKEN = os.getenv("HF_TOKEN")
-HF_MODEL = "EleutherAI/gpt-j-6B"
+# Environment Variables
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")  # BotFather token
+HF_TOKEN = os.getenv("HF_TOKEN")              # Hugging Face token
+HF_MODEL = "TheBloke/guanaco-7B-HF"          # Free HF model
 
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 
 def query_hf(prompt):
     headers = {"Authorization": f"Bearer {HF_TOKEN}"}
-    json_data = {"inputs": prompt, "options":{"use_cache":False}}
-    r = requests.post(f"https://api-inference.huggingface.co/models/{HF_MODEL}", headers=headers, json=json_data)
+    payload = {"inputs": prompt, "options": {"use_cache": False}}
+    r = requests.post(f"https://api-inference.huggingface.co/models/{HF_MODEL}",
+                      headers=headers, json=payload)
     try:
         return r.json()[0]['generated_text']
-    except:
-        return "Sorry, couldn't generate response."
+    except Exception as e:
+        return f"Error: {e}"
 
 @bot.message_handler(func=lambda m: True)
 def chat_with_hf(msg):
